@@ -1,0 +1,10 @@
+name = "pifly-sockets"
+main = "src/worker.js"  # We'll create this
+compatibility_date = "2025-11-12"
+
+[[durable_objects.bindings]]
+name = "GAME_ROOM"
+class_name = "GameRoom"
+
+[env.production.vars]
+GEMINI_API_KEY = "AIzaSyB7L2WeeWPnK8MPC9q4ZUc7Foq2dFnyX5g"  # Add in dashboard later
