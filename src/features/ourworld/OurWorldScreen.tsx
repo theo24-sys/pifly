@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useSocket } from '@/shared/lib/socket';
 import { Button } from '@/shared/ui/Button';
-import { Lottie } from '@lottiefiles/react-lottie-player';
+import Lottie from '@lottiefiles/react-lottie-player';
 import { generateWorldFromVoice } from './geminiService';
 
 interface WorldState {
@@ -64,7 +64,6 @@ export function OurWorldScreen() {
       setPrompt('');
     }, 800);
   };
-
   // ---------- Gift ----------
   const sendGift = (type: 'fireworks' | 'hearts') => {
     socket.emit('updateGameState', {

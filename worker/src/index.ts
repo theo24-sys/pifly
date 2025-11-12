@@ -3,9 +3,11 @@
 }
 
 export default {
-  async fetch(request: Request, env: Env) {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const upgrade = request.headers.get("Upgrade");
-    if (upgrade !== "websocket") return new Response("WebSocket expected", { status: 400 });
+    if (upgrade !== "websocket") {
+      return new Response("WebSocket expected", { status: 400 });
+    }
 
     const url = new URL(request.url);
     const roomId = url.searchParams.get("roomId") || "default";
@@ -17,7 +19,7 @@ export default {
     await obj.handleWebSocket(server);
 
     return new Response(null, { status: 101, webSocket: client });
-  }
+  },
 };
 
 export class GameRoom {
@@ -28,11 +30,14 @@ export class GameRoom {
     this.state = state;
   }
 
-  async handleWebSocket(ws: WebSocket) {
+  async handleWebSocket(ws: WebSocket): Promise<void> {
     this.clients.add(ws);
+
     ws.addEventListener("message", async (msg) => {
       try {
-        const data = JSON.parse(await msg.data.text());
+        const text = await (msg.data as Blob).text();
+        const data = JSON.parse(text);
+
         if (data.type === "updateGameState") {
           await this.state.storage.put(`state-${data.gameId}`, data.state);
           for (const c of this.clients) {
@@ -40,9 +45,15 @@ export class GameRoom {
               c.send(JSON.stringify({ type: "gameStateUpdate", state: data.state }));
             }
           }
+        } else if (data.type === "joinGame") {
+          const saved = await this.state.storage.get(`state-${data.gameId}`);
+          if (saved) ws.send(JSON.stringify({ type: "gameStateUpdate", state: saved }));
         }
-      } catch (e) { console.error(e); }
+      } catch (e) {
+        console.error("Parse error:", e);
+      }
     });
+
     ws.addEventListener("close", () => this.clients.delete(ws));
   }
 }
