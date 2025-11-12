@@ -5,9 +5,9 @@ let socket: WebSocket | null = null;
 const listeners = new Map<string, (data: any) => void>();
 
 export const connectSocket = (roomId: string) => {
-  const baseUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8787';
-  const url = ${baseUrl}roomId=;
-  
+  const baseUrl: string = import.meta.env.VITE_WS_URL || 'ws://localhost:8787'; // Ensure type is set
+  const url = `${baseUrl}?roomId=${roomId}`;
+
   socket = new WebSocket(url);
 
   socket.onopen = () => {
