@@ -1,13 +1,5 @@
-import { BrowserRouter } from 'react-router-dom';
-import { RoutesConfig } from './app/routes';
-import { SocketProvider } from '@/shared/lib/socket';
+﻿import { RoutesConfig } from './app/routes';
 
 export function App() {
-  return (
-    <BrowserRouter>
-      <SocketProvider>
-        <RoutesConfig />
-      </SocketProvider>
-    </BrowserRouter>
-  );
+  return <RoutesConfig />;
 }
