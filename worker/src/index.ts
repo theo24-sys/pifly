@@ -1,4 +1,6 @@
-﻿export interface Env {
+﻿import type { DurableObjectNamespace, DurableObjectState } from "@cloudflare/workers-types";
+
+export interface Env {
   GAME_ROOM: DurableObjectNamespace;
 }
 
@@ -14,11 +16,15 @@ export default {
     const id = env.GAME_ROOM.idFromName(roomId);
     const obj = env.GAME_ROOM.get(id);
 
-    const [client, server] = Object.values(new WebSocketPair());
+    const pair = new WebSocketPair();
+    const [client, server] = [pair[0], pair[1]];
     server.accept();
     await obj.handleWebSocket(server);
 
-    return new Response(null, { status: 101, webSocket: client });
+    return new Response(null, {
+      status: 101,
+      webSocket: client,
+    });
   },
 };
 
