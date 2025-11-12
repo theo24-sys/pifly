@@ -14,17 +14,9 @@ export default {
     const url = new URL(request.url);
     const roomId = url.searchParams.get("roomId") || "default";
     const id = env.GAME_ROOM.idFromName(roomId);
-    const obj = env.GAME_ROOM.get(id);
+    const stub = env.GAME_ROOM.get(id);
 
-    const pair = new WebSocketPair();
-    const [client, server] = [pair[0], pair[1]];
-    server.accept();
-    await obj.handleWebSocket(server);
-
-    return new Response(null, {
-      status: 101,
-      webSocket: client,
-    });
+    return await stub.fetch(request);
   },
 };
 
@@ -36,7 +28,14 @@ export class GameRoom {
     this.state = state;
   }
 
-  async handleWebSocket(ws: WebSocket): Promise<void> {
+  async fetch(request: Request): Promise<Response> {
+    const [client, server] = Object.values(new WebSocketPair());
+    server.accept();
+    this.handleWebSocket(server);
+    return new Response(null, { status: 101, webSocket: client });
+  }
+
+  handleWebSocket(ws: WebSocket): void {
     this.clients.add(ws);
 
     ws.addEventListener("message", async (msg) => {
