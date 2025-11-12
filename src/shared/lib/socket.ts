@@ -1,38 +1,49 @@
-import { createContext, useContext, ReactNode } from 'react';
-import { io, Socket } from 'socket.io-client';
+﻿// src/shared/lib/socket.ts
+// Cloudflare Workers WebSocket client (no Socket.io)
 
-const socket: Socket = io(import.meta.env.VITE_SOCKET_URL || 'ws://localhost:3001', {
-  transports: ['websocket'],
-  autoConnect: true,
-});
+let socket: WebSocket | null = null;
+const listeners = new Map<string, (data: any) => void>();
 
-socket.on('connect', () => console.log('Connected to server'));
-socket.on('disconnect', () => console.log('Disconnected'));
+export const connectSocket = (roomId: string) => {
+  const wsUrl = import.meta.env.VITE_WS_URL || 'ws://localhost:8787';
+  socket = new WebSocket(${wsUrl}?roomId=);
 
-const SocketContext = createContext<Socket>(socket);
+  socket.onopen = () => {
+    console.log('Connected to WebSocket server');
+  };
 
-export const SocketProvider = ({ children }: { children: ReactNode }) => (
-  <SocketContext.Provider value={socket}>{children}</SocketContext.Provider>.Provider>
-);
-
-export const useSocket = () => useContext(SocketContext);
-
-// Use Cloudflare Workers WebSocket
-const wsUrl = import.meta.env.VITE_WS_URL || 'wss://pifly-sockets.youraccount.workers.dev/socket';
-let socket: WebSocket;
-
-const connectSocket = () => {
-  socket = new WebSocket(wsUrl + '?roomId=' + roomId);  // Append roomId to URL
-  socket.onopen = () => console.log('Connected to Workers WebSocket');
-  socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    if (data.type === 'gameStateUpdate') {
-      // Update state (e.g., Zustand)
+  socket.onmessage = (event: MessageEvent) => {
+    try {
+      const data = JSON.parse(event.data);
+      const handler = listeners.get(data.type);
+      if (handler) handler(data);
+    } catch (e) {
+      console.error('Invalid message:', e);
     }
+  };
+
+  socket.onclose = () => {
+    console.log('WebSocket closed');
+    socket = null;
+  };
+
+  socket.onerror = (err) => {
+    console.error('WebSocket error:', err);
   };
 };
 
-export const useSocket = () => ({
-  emit: (type: string, payload: any) => socket.send(JSON.stringify({ type, ...payload })),
-  on: (type: string, callback: (data: any) => void) => { /* Handle */ },
-});
+export const useSocket = () => {
+  return {
+    emit: (type: string, payload: any) => {
+      if (socket?.readyState === WebSocket.OPEN) {
+        socket.send(JSON.stringify({ type, ...payload }));
+      }
+    },
+    on: (type: string, callback: (data: any) => void) => {
+      listeners.set(type, callback);
+    },
+    off: (type: string) => {
+      listeners.delete(type);
+    },
+  };
+};
